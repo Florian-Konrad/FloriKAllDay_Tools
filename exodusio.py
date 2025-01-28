@@ -200,28 +200,7 @@ def read(filename):
         
 
 
-        # check if a variable is defined on all blocks, if not define it for missing blocks with nan values
-        # so the file can still be loaded by meshio
-        totel_varnumber = len(nc.variables['name_elem_var'])
-        total_blocknumber = len(nc.variables['eb_prop1'])
-        variable_list = nc.variables.keys()
-
-        var_on_block_count = []
-        for var_id in range(totel_varnumber):
-            pattern = re.compile('vals_elem_var{}eb.*$'.format(var_id+1))
-            matching_entries = [string for string in variable_list if pattern.match(string)]
-            var_on_block_count.append(len(matching_entries))
-        var_on_block_count = np.array(var_on_block_count)
         
-        var_indices = np.where(var_on_block_count != total_blocknumber)
-        for idx in var_indices[0]:
-            for block in range(total_blocknumber):
-                key = 'vals_elem_var{}eb{}'.format(idx + 1,block + 1)
-                if key not in variable_list:
-                    idx = int(idx)
-                    if idx not in cll_dta:
-                        cll_dta[idx] = {}
-                    cll_dta[idx][block] = np.array(len(nc.variables['connect{}'.format(block + 1)]) * [np.nan])
 
         for key, value in nc.variables.items():
             
@@ -262,6 +241,32 @@ def read(filename):
             elif key == "name_elem_var":
                 value.set_auto_mask(False)
                 cell_data_names = [b"".join(c).decode("UTF-8") for c in value[:]]
+                cell_data_names = [name if len(name) > 0 else str(i) for i,name in enumerate(cell_data_names)]
+
+                # check if a variable is defined on all blocks, if not define it for missing blocks with nan values
+                # so the file can still be loaded
+                totel_varnumber = len(nc.variables['name_elem_var'])
+                total_blocknumber = len(nc.variables['eb_prop1'])
+                variable_list = nc.variables.keys()
+
+                var_on_block_count = []
+                for var_id in range(totel_varnumber):
+                    pattern = re.compile('vals_elem_var{}eb.*$'.format(var_id+1))
+                    matching_entries = [string for string in variable_list if pattern.match(string)]
+                    var_on_block_count.append(len(matching_entries))
+                var_on_block_count = np.array(var_on_block_count)
+                
+                var_indices = np.where(var_on_block_count != total_blocknumber)
+                for idx in var_indices[0]:
+                    for block in range(total_blocknumber):
+                        key = 'vals_elem_var{}eb{}'.format(idx + 1,block + 1)
+                        if key not in variable_list:
+                            idx = int(idx)
+                            if idx not in cll_dta:
+                                cll_dta[idx] = {}
+                            cll_dta[idx][block] = np.array(len(nc.variables['connect{}'.format(block + 1)]) * [np.nan])
+                
+                
             elif key[:13] == "vals_elem_var":
                 # eb: element block
                 m = re.match("vals_elem_var(\\d+)?(?:eb(\\d+))?", key)
@@ -280,18 +285,21 @@ def read(filename):
             elif key == "ns_names":
                 value.set_auto_mask(False)
                 ns_names = [b"".join(c).decode("UTF-8") for c in value[:]]
+                ns_names = [name if len(name) > 0 else str(i) for i,name in enumerate(ns_names)]
             elif key == "eb_names":
                 value.set_auto_mask(False)
                 eb_names = [b"".join(c).decode("UTF-8") for c in value[:]]
+                eb_names = [name if len(name) > 0 else str(i) for i,name in enumerate(eb_names)]
             elif key.startswith("node_ns"):  # Expected keys: node_ns1, node_ns2
                 ns.append(value[:].filled() - 1)  # Exodus is 1-based
                 
             elif key == "ss_names":
                 value.set_auto_mask(False)
                 ss_names = [b"".join(c).decode("UTF-8") for c in value[:]]
+                ss_names = [name if len(name) > 0 else str(i) for i,name in enumerate(ss_names)]
                 
             elif key.startswith("side_ss"): # Expected keys: side_ss1, side_ss2
-                sides_ss.append(value[:].filled() - 1) # Exodus is 1-based
+                sides_ss.append(value[:].filled() - 1) # Exodus is 1-based 
                 
             elif key.startswith("elem_ss"): # Expected keys: elem_ss1, elem_ss2
                 elem_ss.append(value[:].filled() - 1) # Exodus is 1-based
@@ -592,7 +600,7 @@ def write(file_path,points,cells,
                 
                 data = rootgrp.createVariable(sides_name, 'i4', dimensions=dim)
                 # Exodus is 1-based
-                data[:] = sides + 1 # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
+                data[:] = sides + 1  # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
                 
         
             
@@ -646,35 +654,35 @@ def write(file_path,points,cells,
 
 #%% Example Usage
 
-import os
+# import os
 
-file_path = "/Users/floriankonrad/Dropbox/5_numys/5_Numys_Projects/01_Stephanskirchen/1_simulation/2_SimulationFiles"
-exodusfile = "TH_Stephanskirchen_transient_v3_final_out.e"
-test_file = os.path.join(file_path,exodusfile)
-
-
-points,cells,point_data,cell_data,point_sets,info,time_vals,eb_names,side_sets = read(test_file)
-
-# calculate pressure change vs first timestep
-point_data["dp_python"] = point_data["pore_pressure"] - point_data["pore_pressure"][0]
-
-# calculate head_change from dp_python
-point_data["delta_head_python"] = point_data["dp_python"] / (999.793 * 9.8065 * 1e-5)
-
-# calculate head
-point_data["head_python"] = point_data["pore_pressure"] / (999.793 * 9.8065 * 1e-5)
+# file_path = "/Users/floriankonrad/Dropbox/5_numys/5_Numys_Projects/01_Stephanskirchen/1_simulation/2_SimulationFiles"
+# exodusfile = "TH_Stephanskirchen_transient_v3_final_out.e"
+# test_file = os.path.join(file_path,exodusfile)
 
 
-save_path = os.path.join(file_path,"new_file.e")
+# points,cells,point_data,cell_data,point_sets,info,time_vals,eb_names,side_sets = read(test_file)
+
+# # calculate pressure change vs first timestep
+# point_data["dp_python"] = point_data["pore_pressure"] - point_data["pore_pressure"][0]
+
+# # calculate head_change from dp_python
+# point_data["delta_head_python"] = point_data["dp_python"] / (999.793 * 9.8065 * 1e-5)
+
+# # calculate head
+# point_data["head_python"] = point_data["pore_pressure"] / (999.793 * 9.8065 * 1e-5)
 
 
-write(save_path,points,cells,
-      side_sets = side_sets,
-      point_sets = point_sets,
-      point_data = point_data,
-      cell_data=cell_data,
-      time_vals = time_vals,
-      eb_names = eb_names)
+# save_path = os.path.join(file_path,"new_file.e")
+
+
+# write(save_path,points,cells,
+#       side_sets = side_sets,
+#       point_sets = point_sets,
+#       point_data = point_data,
+#       cell_data=cell_data,
+#       time_vals = time_vals,
+#       eb_names = eb_names)
 
 
 
