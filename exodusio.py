@@ -172,7 +172,7 @@ def read(filename):
     side_sets : dict of tuple
         defining sidesets used to apply boundary conditions,
         dict keys are side set names,
-        tuples consist of element side definition from exodus(sides_ss) and element ID 0-based (elem_ss). The default is {}. 
+        tuples consist of element side definition from exodus(sides_ss) and element ID (elem_ss), both 1-based by exodus definition. The default is {}. 
     
     '''
 
@@ -299,10 +299,10 @@ def read(filename):
                 ss_names = [name if len(name) > 0 else str(i) for i,name in enumerate(ss_names)]
                 
             elif key.startswith("side_ss"): # Expected keys: side_ss1, side_ss2
-                sides_ss.append(value[:].filled() - 1) # Exodus is 1-based 
+                sides_ss.append(value[:].filled()) # Exodus is 1-based 
                 
             elif key.startswith("elem_ss"): # Expected keys: elem_ss1, elem_ss2
-                elem_ss.append(value[:].filled() - 1) # Exodus is 1-based
+                elem_ss.append(value[:].filled()) # Exodus is 1-based
                 
         
         # making sure that dict order is correct as the fix for variables that arent defined on some block
@@ -372,7 +372,8 @@ def write(file_path,points,cells,
     side_sets : dict of tuple, optional
         defining sidesets used to apply boundary conditions,
         dict keys are side set names,
-        tuples consist of element side definition from exodus(sides_ss) and element ID 0-based (elem_ss). The default is {}.
+        tuples consist of element side definition from exodus(sides_ss) and element ID (elem_ss), both 1-based by exodus definition. 
+        The default is {}.
     point_sets : dict of arrays, optional
         defining point sets aka node sets,
         dict keys are side/node set names,
@@ -596,11 +597,11 @@ def write(file_path,points,cells,
                 
                 data = rootgrp.createVariable(elem_name, 'i4', dimensions=dim)
                 # Exodus is 1-based
-                data[:] = elem + 1 # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
+                data[:] = elem # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
                 
                 data = rootgrp.createVariable(sides_name, 'i4', dimensions=dim)
                 # Exodus is 1-based
-                data[:] = sides + 1  # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
+                data[:] = sides  # assuming 1-based input here, as I#M normally not generating sidesets myself but just reading it from an exodus file, its then 1-based already
                 
         
             
