@@ -161,7 +161,7 @@ def read(filename):
     point_sets : dict of arrays
         defining point sets aka node sets,
         dict keys are side/node set names,
-        dict values are arrays defining nodes by their index 0-based. The default is {}.
+        dict values are arrays defining nodes by their index 1-based. The default is {}.
     info : str
         exodus mesh info.
     time_vals : array/list of float
@@ -291,7 +291,7 @@ def read(filename):
                 eb_names = [b"".join(c).decode("UTF-8") for c in value[:]]
                 eb_names = [name if len(name) > 0 else str(i) for i,name in enumerate(eb_names)]
             elif key.startswith("node_ns"):  # Expected keys: node_ns1, node_ns2
-                ns.append(value[:].filled() - 1)  # Exodus is 1-based
+                ns.append(value[:].filled())  # Exodus is 1-based
                 
             elif key == "ss_names":
                 value.set_auto_mask(False)
@@ -377,7 +377,7 @@ def write(file_path,points,cells,
     point_sets : dict of arrays, optional
         defining point sets aka node sets,
         dict keys are side/node set names,
-        dict values are arrays defining nodes by their index 0-based. The default is {}.
+        dict values are arrays defining nodes by their index 1-based. The default is {}.
     point_data : dict of arrays, optional
         defining nodal variable values, which can be optionally temporally variable,
         dict keys are nodal variables names,
@@ -565,7 +565,7 @@ def write(file_path,points,cells,
                 
                 data = rootgrp.createVariable(ns_name, 'i4', dimensions=dim)
                 # Exodus is 1-based
-                data[:] = node_set + 1 # assuming 1-based input here
+                data[:] = node_set # assuming 1-based input here
             
             
             
@@ -585,7 +585,7 @@ def write(file_path,points,cells,
                 
             # side set names 
             data = rootgrp.createVariable("ss_names","S1",dimensions=("num_side_sets", "len_name"))
-            for i, name in enumerate(side_sets): #point_sets is a dict
+            for i, name in enumerate(side_sets): #side_sets is a dict
                 char_list = [bytes(char, 'utf-8') for char in name]
                 data[i,:len(char_list)] = char_list
                 
