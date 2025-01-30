@@ -2,27 +2,57 @@
 """
 Created on Thu Oct 26 14:28:18 2023
 
-@author: KONRAD.FLORIAN
+functionality realted to exodus meshes
+can be used with meshio or exodusio
+
+@author: Florian-Konrad
 """
-import os
+
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 import pyvista as pv
 import math
-import statistics
 from collections import Counter
-
-# Get the current script directory
-current_script_directory = os.path.dirname(__file__)
-# Get the parent directory of the script
-parent_directory = os.path.dirname(current_script_directory)
-
 import sys
-sys.path.append(parent_directory) 
-import lib.meshio_ex as meshio_ex
-import numpy as np
-from lib import interswag as isw
+import meshio
+
+
+
+# Print iterations progress
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        bar_length  - Optional  : character length of bar (Int)
+    
+    #example usage:
+    l = len(something)
+    print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+    for i, X in enumerate(something):
+        
+        #do your stuff here
+        
+        #update progressbar:
+        print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+    
+    """
+    
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+    if iteration == total:
+        sys.stdout.write('\n')
+    sys.stdout.flush()
 
 
 
@@ -53,7 +83,7 @@ def get_node_id_from_coords(mesh_node_coords,searchnodecoords):
 
     '''
     l = len(searchnodecoords)
-    isw.print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+    print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
     node_ids = []
     for i,node in enumerate(searchnodecoords):
         is_close = np.isclose(mesh_node_coords, node,rtol=1e-6)
@@ -67,7 +97,7 @@ def get_node_id_from_coords(mesh_node_coords,searchnodecoords):
         else:
             node_ids.append(matching_rows[0][0])
         #update progressbar:
-        isw.print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+        print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
         
     return node_ids
 
@@ -98,7 +128,7 @@ def move_nodes_meshio_mesh(meshfile,existing_nodes,corresponding_new_coord):
     array of node indices of manipulated mesh nodes
 
     '''
-    mesh = meshio_ex.read(meshfile)
+    mesh = meshio.read(meshfile)
     mesh_node_coords = mesh.points
     
     manip_ids = get_node_id_from_coords(mesh_node_coords,existing_nodes)
@@ -429,7 +459,7 @@ def subdomainblock_from_bounding_box(mesh_obj, bottom_left, top_right):
         cells.append((meshio_type, connect))
     
     # make new meshio object with new data
-    new_mesh = meshio_ex.Mesh(mesh_nodes,
+    new_mesh = meshio.Mesh(mesh_nodes,
                               cells,
                               point_sets=mesh_obj.point_sets,
                               cell_data=new_cell_data)
@@ -684,9 +714,9 @@ def find_missing_element_ids_around_well(mesh, nearest_points, uniq_xy):
 
 def get_discretization_on_surface(surface_points):
     
-    # initiate progressbar, can come from interswag(isw) lib or reseng --> misc
+
     l = len(surface_points)
-    isw.print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+    print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
     
     # iterate over slice, select a point, remove point from slice and build KDtree for filtered slice and calculate distance
     distances = []
@@ -695,7 +725,7 @@ def get_discretization_on_surface(surface_points):
         kdtree_arr = KDTree(arr)
         distanz, _ = kdtree_arr.query(point)
         distances.append(distanz)
-        isw.print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+        print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
     
     surface_discr_extreme = [max(distances),min(distances)]
 
@@ -709,9 +739,9 @@ def get_discretization_from_nodes(mesh_points):
     # does not necessary correspond to a mesh layer but doesnt matter in this context
     xy_slice = df.drop_duplicates(subset=[0,1], ignore_index=True).to_numpy()
     
-    # initiate progressbar, can come from interswag(isw) lib or reseng --> misc
+
     l = len(xy_slice)
-    isw.print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+    print_progress(0, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
     
     # iterate over slice, select a point, remove point from slice and build KDtree for filtered slice and calculate distance
     distances = []
@@ -720,7 +750,7 @@ def get_discretization_from_nodes(mesh_points):
         kdtree_arr = KDTree(arr)
         distanz, _ = kdtree_arr.query(point)
         distances.append(distanz)
-        isw.print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
+        print_progress(i + 1, l, prefix = 'Progress:', suffix = 'Complete', bar_length = 50)
     
     # take one unique combination of x & y coords and look for all possible z-values = Mesh edge
     # here all information about vertical discretization is stored

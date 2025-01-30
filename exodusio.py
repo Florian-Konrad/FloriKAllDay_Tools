@@ -7,7 +7,7 @@ Reading and writing of exodus meshes
 with focus on moose files
 to enable manipulation of mesh properties using python
 
-@author: floriankonrad
+@author: Florian-Konrad
 """
 
 
