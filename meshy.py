@@ -209,6 +209,7 @@ def make_new_block_from_elementids(block_connects,
         
     ele_per_existing_block_for_new_block : list of lists
         contains the element ids for each existing block that should be moved to a new block. 
+        must be in local element IDs, so ID = 1 means remove 2nd element from block
         eg.
         [[1,2],[2]]
         
@@ -263,7 +264,7 @@ def make_new_block_from_elementids(block_connects,
                 # calc how many elems were in all og blocks before the current
                 delta_index = sum(len(block) for block in block_connects[:block_id])
                 # shift og indices by delta_index to generate global og element indices
-                og_indices = og_indices + delta_index
+                og_indices = og_indices + delta_index 
                 
             old_cell_ids = np.r_[old_cell_ids,og_indices]
             
@@ -300,7 +301,15 @@ def make_new_block_from_elementids(block_connects,
     
     # old cell ids are missing cell ids that movde to new block
     # this information is stored in ele_per_existing_block_for_new_block
-    og_indices = np.concatenate(ele_per_existing_block_for_new_block)
+    # but in local IDs on blocks not in global ele IDs, this needs to be corrected
+    og_indices = np.array([], dtype='int32')
+    for block_id, moved_ele in enumerate(ele_per_existing_block_for_new_block):
+        if block_id > 0 and len(moved_ele) > 0:
+            # to get global IDs elem numbers in the original blocks before the current must be known and added
+            moved_ele = moved_ele + sum(len(block) for block in block_connects[:block_id])
+        og_indices = np.r_[og_indices,moved_ele]
+   
+    
     old_cell_ids = np.r_[old_cell_ids,og_indices]
     old_cell_ids = old_cell_ids.astype(np.int32) + 1
     #using stored og indices to generate element map
