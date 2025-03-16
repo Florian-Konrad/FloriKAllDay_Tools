@@ -319,21 +319,39 @@ def make_new_block_from_elementids(block_connects,
 
     # use identified indices reformat cell data as well
     if cell_data is not None:
+        
         new_cell_data = dict()
+        
         for key, arrs in cell_data.items():
-            block_data = []
-            well_surr_data = np.array([])
+            rearranged_block_data = []
+            
+            if arrs[0].ndim == 1:
+                moved_block_data = np.array([])
+            elif arrs[0].ndim == 2:
+                moved_block_data = np.empty((arrs[0].shape[0],0))
+            
             for block_id, data in enumerate(arrs):
+                
                 if len(ele_per_existing_block_for_new_block[block_id]) > 0:
-                    main_data = np.delete(data, ele_per_existing_block_for_new_block[block_id], axis=0)
-                    block_data.append(main_data)
-                    well_sur_data_c_block = data[ele_per_existing_block_for_new_block[block_id]]
-                    well_surr_data = np.r_[well_surr_data,well_sur_data_c_block]
-                else:
-                    block_data.append(data)
                     
-            block_data.append(well_surr_data)
-            new_cell_data[key] = block_data
+                    if data.ndim == 1:  # 1D-Array = no temporal data
+                        main_data = np.delete(data, ele_per_existing_block_for_new_block[block_id], axis=1)
+                        new_block_data_c_block = data[ele_per_existing_block_for_new_block[block_id]]
+                        moved_block_data = np.r_[moved_block_data,new_block_data_c_block]
+                    elif data.ndim == 2:  # 2D-Array = temporal data
+                        main_data = np.delete(data, ele_per_existing_block_for_new_block[block_id], axis=1)
+
+                        new_block_data_c_block = data[:, ele_per_existing_block_for_new_block[block_id]]
+                        moved_block_data = np.c_[moved_block_data,new_block_data_c_block]
+                           
+                    rearranged_block_data.append(main_data)
+                    
+                    
+                else:
+                    rearranged_block_data.append(data)
+                    
+            rearranged_block_data.append(moved_block_data)
+            new_cell_data[key] = rearranged_block_data
     else:
         new_cell_data = None
     
