@@ -494,7 +494,7 @@ def subdomainblock_from_bounding_box(mesh_obj, bottom_left, top_right):
     return new_mesh
 
 
-def add_nodeset_from_nodes_file(mesh_nodes,point_sets,nodes_file_name):
+def add_nodeset_from_nodes_file(mesh_nodes,point_sets,nodes_file_name,node_set_name=''):
     '''
     uses a text file containing coordinates for selected mesh nodes searches
     for them in an array of the entire mesh nodes existing in a mesh
@@ -511,6 +511,8 @@ def add_nodeset_from_nodes_file(mesh_nodes,point_sets,nodes_file_name):
     nodes_file_name : string
         a filename / path that is read in using numpy
         containing only x,y,z values comma separated without header.
+    node_set_name : string
+        a name for the nodeset that gets added to the mesh
 
     Returns
     -------
@@ -520,13 +522,16 @@ def add_nodeset_from_nodes_file(mesh_nodes,point_sets,nodes_file_name):
         the name of the new point set is determined by using the file basename.
 
     '''
-    
-    base_name = nodes_file_name.split(".")[0]
+    if node_set_name =='':
+        base_name = nodes_file_name.split(".")[0]
+    else:
+        base_name = node_set_name
     nodes = np.genfromtxt(nodes_file_name, delimiter=',')
     node_ids = get_node_id_from_coords(mesh_nodes,nodes)
-    point_sets[base_name] = np.array(node_ids).astype(int)
+    node_ids = np.array(node_ids).astype(int) + 1
+    point_sets[base_name] = node_ids
     
-    return point_sets
+    return print(f'new nodeset "{base_name}" has been added to the point_sets dictionary!')
 
 def find_nodes_with_element_gap(uniq_xy, nearest_point_list):
 

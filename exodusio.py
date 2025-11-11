@@ -200,7 +200,7 @@ def read(filename):
         
 
 
-        
+        nc.variables["coordx"]
 
         for key, value in nc.variables.items():
             
